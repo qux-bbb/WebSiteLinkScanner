@@ -7,6 +7,13 @@ from optparse import OptionParser
 import requests
 import re
 
+
+# 加headers，绕过反爬虫机制
+headers = {
+"User-Agent": "Mozilla/5.0 (Windows NT 10.0; WOW64; rv:54.0) Gecko/20100101 Firefox/54.0",
+"Referer": "http://www.baidu.com",
+}
+
 # 一些文件 如 图片，js，css文件，不用分析，直接跳过
 
 ignore_tails = [".jpg", ".png", ".gif",".js", ".css"]
@@ -31,7 +38,7 @@ def scan(domain):
 			dir_url = re.findall(r'(https?://.*)/', url)[0]
 
 		try: # 有的时候会出现超时错误，包裹起来
-			res = requests.get(url, timeout = 10)
+			res = requests.get(url, headers = headers, timeout = 10)
 		except requests.exceptions.Timeout:
 			continue
 
