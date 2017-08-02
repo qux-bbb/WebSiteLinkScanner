@@ -31,8 +31,8 @@ def scan(domain):
 			dir_url = re.findall(r'(https?://.*)/', url)[0]
 
 		try: # 有的时候会出现超时错误，包裹起来
-			res = requests.get(url, allow_redirects=False, timeout = 10)
-		except Exception as e:
+			res = requests.get(url, timeout = 10)
+		except requests.exceptions.Timeout:
 			continue
 
 		half_urls = re.findall(r"(?:href|src)=\"([a-zA-Z0-9\-\.\/\?_]+)\"", res.content)
