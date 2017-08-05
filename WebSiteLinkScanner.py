@@ -8,7 +8,7 @@ import requests
 import re
 
 
-# 加headers，绕过反爬虫机制
+# 加headers，绕过简单的反爬虫机制
 headers = {
 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; WOW64; rv:54.0) Gecko/20100101 Firefox/54.0",
 "Referer": "http://www.baidu.com",
@@ -26,6 +26,8 @@ def ignore_it(url):
 
 
 def scan(domain):
+	if domain[-1] == "/":  # 如果域名最后有 "/",就去掉
+		domain = domain[0:-1]
 	urls = [domain]
 	base_url = re.findall(r"https?://(?:www\.)?(.*\..*?$)",domain)[0]  # 最基本的url，用来判断是否同网站
 	for url in urls:
@@ -46,19 +48,25 @@ def scan(domain):
 		for half_url in half_urls:
 			if "http" in half_url or "https" in half_url:
 				if base_url in half_url: # 是本网站的url
+					if half_url[-1] == '/':  # 有http://hello  http://hello/  其实是一种情况
+						half_url = half_url[:-1]
 					if half_url not in urls:
 						urls.append(half_url)
 				continue # 不管是不是，这个half_url已经检查完了，继续检查下一个
 			else: # 没有 http、https的url肯定是这个站的，只要根据情况区分就好了
 				join_url = "" 
-				if half_url[0] == '/':
-					join_url = dir_url + half_url
+				if half_url[0] == '/':  # 这种情况直接从根目录算起
+					join_url = domain + half_url
+				elif half_url[0:2] == './':
+					join_url = dir_url + half_url[1:]
 				else:
 					join_url = dir_url + "/" + half_url
 
 				while "../" in join_url: # 这里需要把  hello/../  这样的形式去掉,直接用replace正则表达式失败了，不知道怎么回事
 					join_url = re.sub(r'(/[a-zA-Z0-9\-_]+/\.\./)', "/", join_url)
 
+				if half_url[-1] == '/':  # 有http://hello  http://hello/  其实是一种情况
+					half_url = half_url[:-1]
 				if join_url not in urls:
 					urls.append(join_url)
 
