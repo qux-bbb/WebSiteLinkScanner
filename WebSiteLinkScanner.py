@@ -44,7 +44,8 @@ def scan(domain):
 		except requests.exceptions.Timeout:
 			continue
 
-		half_urls = re.findall(r"(?:href|src)=\"([a-zA-Z0-9:_\-\.\/]+)\"", res.content)
+		half_urls = re.findall(r"(?:href|src)\s?=\s?[\"\']([a-zA-Z0-9:_\-\.\/]+)[\"\']", res.content)
+		print("half_urls", half_urls)
 		for half_url in half_urls:
 			if "http" in half_url or "https" in half_url:
 				if base_url in half_url: # 是本网站的url
