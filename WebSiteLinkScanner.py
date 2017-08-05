@@ -44,6 +44,8 @@ def scan(domain):
 		except requests.exceptions.Timeout:
 			continue
 
+		# 单引号是有的重定向用的是单引号
+		# \s? 是有些 = 两边都有空格
 		half_urls = re.findall(r"(?:href|src)\s?=\s?[\"\']([a-zA-Z0-9:_\-\.\/]+)[\"\']", res.content)
 		print("half_urls", half_urls)
 		for half_url in half_urls:
