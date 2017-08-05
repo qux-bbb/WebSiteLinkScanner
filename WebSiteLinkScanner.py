@@ -11,12 +11,12 @@ import re
 # 加headers，绕过简单的反爬虫机制
 headers = {
 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; WOW64; rv:54.0) Gecko/20100101 Firefox/54.0",
-"Referer": "http://www.baidu.com",
+"Referer": "http://www.google.com",
 }
 
 # 一些文件 如 图片，js，css文件，不用分析，直接跳过
 
-ignore_tails = [".jpg", ".png", ".gif",".js", ".css"]
+ignore_tails = [".jpg", ".png", ".gif",".js", ".css", "pdf"]
 def ignore_it(url):
 	for tail in ignore_tails:
 		if url.endswith(tail):
@@ -54,7 +54,6 @@ def scan(domain):
 						half_url = half_url[:-1]
 					if half_url not in urls:
 						urls.append(half_url)
-				continue # 不管是不是，这个half_url已经检查完了，继续检查下一个
 			else: # 没有 http、https的url肯定是这个站的，只要根据情况区分就好了
 				join_url = "" 
 				if half_url[0] == '/':  # 这种情况直接从根目录算起
