@@ -49,6 +49,10 @@ def scan(domain):
 		# \s? 是有些 = 两边都有空格
 		half_urls = re.findall(r"(?:href|src)\s?=\s?[\"\']([a-zA-Z0-9:_\-\.\/]+)[\"\']", res.content)
 		for half_url in half_urls:
+
+			if half_url[0:2] == "//": # 新的情况，还有这种形式的 //www.hello.com/sdf 做下预处理
+				half_url = "http:" + half_url
+
 			if "http" in half_url or "https" in half_url:
 				if base_url in half_url: # 是本网站的url
 					if half_url[-1] == '/':  # 有http://hello  http://hello/  其实是一种情况
