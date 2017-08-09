@@ -7,11 +7,11 @@ from optparse import OptionParser
 import requests
 import re
 
-
+Referer = "http://www.google.com"
 # 加headers，绕过简单的反爬虫机制
 headers = {
 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; WOW64; rv:54.0) Gecko/20100101 Firefox/54.0",
-"Referer": "http://www.google.com",
+"Referer": Referer,
 }
 
 # 一些文件 如 图片，js，css文件，不用分析，直接跳过
@@ -28,6 +28,7 @@ def ignore_it(url):
 def scan(domain):
 	if domain[-1] == "/":  # 如果域名最后有 "/",就去掉
 		domain = domain[0:-1]
+	Referer = domain
 	urls = [domain]
 	base_url = re.findall(r"https?://(?:www\.)?(.*\..*?$)",domain)[0]  # 最基本的url，用来判断是否同网站
 	for url in urls:
@@ -66,8 +67,8 @@ def scan(domain):
 				while "../" in join_url: # 这里需要把  hello/../  这样的形式去掉,直接用replace正则表达式失败了，不知道怎么回事
 					join_url = re.sub(r'(/[a-zA-Z0-9\-_]+/\.\./)', "/", join_url)
 
-				if half_url[-1] == '/':  # 有http://hello  http://hello/  其实是一种情况
-					half_url = half_url[:-1]
+				if join_url[-1] == '/':  # 有http://hello  http://hello/  其实是一种情况
+					join_url = join_url[:-1]
 				if join_url not in urls:
 					urls.append(join_url)
 
