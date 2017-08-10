@@ -51,7 +51,10 @@ def scan(domain):
 		for half_url in half_urls:
 
 			if half_url[0:2] == "//": # 新的情况，还有这种形式的 //www.hello.com/sdf 做下预处理
-				half_url = "http:" + half_url
+				if "https" in domain:
+					half_url = "https:" + half_url
+				else:
+					half_url = "http:" + half_url
 
 			if "http" in half_url or "https" in half_url:
 				if base_url in half_url: # 是本网站的url
