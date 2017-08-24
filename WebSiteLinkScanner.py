@@ -49,12 +49,6 @@ def save_img(url):
 def scan(domain):
 	if domain[-1] == "/":  # 如果域名最后有 "/",就去掉
 		domain = domain[0:-1]
-	Referer = domain
-	# 加headers，绕过简单的反爬虫机制
-	headers = {
-		"User-Agent": "Mozilla/5.0 (Windows NT 10.0; WOW64; rv:54.0) Gecko/20100101 Firefox/54.0",
-		"Referer": Referer,
-	}
 
 	urls = [domain]
 	base_url = re.findall(r"https?://(?:www\.)?(.*\..*?$)",domain)[0]  # 最基本的url，用来判断是否同网站
