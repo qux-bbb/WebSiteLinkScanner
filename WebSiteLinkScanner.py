@@ -53,7 +53,7 @@ def scan(domain):
 	urls = [domain]
 	base_url = re.findall(r"https?://(?:www\.)?(.*\..*?$)",domain)[0]  # 最基本的url，用来判断是否同网站
 	for url in urls:
-		print(url)
+		print(url.decode("utf8"))  # 有的汉字直接输出乱码，所以decode一下  
 		# 判断是否保存图片
 		if is_img(url) and save_img_flag:
 			save_img(url)
@@ -71,10 +71,16 @@ def scan(domain):
 		except requests.exceptions.Timeout:
 			continue
 
-		# 单引号是有的重定向用的是单引号
-		# \s? 是有些 = 两边都有空格
-		half_urls = re.findall(r"(?:href|src)\s?=\s?[\"\']([a-zA-Z0-9:_\-\.\/]+)[\"\']", res.content)
+		# 单引号是 有的重定向用的是单引号
+		# \s? 是 有些 = 两边都有空格
+		half_urls = re.findall(r"(?:href|src)\s?=\s?[\"\'](.*?)[\"\']", res.content) # 如果使用res.text,在保存时会出错
 		for half_url in half_urls:
+
+			if len(half_url) == 0: # 匹配为空的情况，需要跳过进行下一轮，比如 href="'+b+'"]
+				continue
+
+			if half_url.startswith("data:"): # 有的资源文件直接以 src形式写到html里，需要跳过
+				continue
 
 			if half_url[0:2] == "//": # 新的情况，还有这种形式的 //www.hello.com/sdf 做下预处理
 				if "https" in domain:
