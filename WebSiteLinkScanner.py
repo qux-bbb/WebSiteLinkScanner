@@ -73,7 +73,7 @@ def scan(domain):
 
 		# 单引号是 有的重定向用的是单引号
 		# \s? 是 有些 = 两边都有空格
-		half_urls = re.findall(r"(?:href|src)\s?=\s?[\"\'](.*?)[\"\']", res.content) # 如果使用res.text,在保存时会出错
+		half_urls = re.findall(r"(?:href|src|action)\s?=\s?[\"\'](.*?)[\"\']", res.content) # 如果使用res.text,在保存时会出错
 		for half_url in half_urls:
 
 			if len(half_url) == 0: # 匹配为空的情况，需要跳过进行下一轮，比如 href="'+b+'"]
