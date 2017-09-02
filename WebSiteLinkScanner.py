@@ -91,6 +91,9 @@ def scan(domain):
 
 			if half_url.startswith("data:"): # 有的资源文件直接以 src形式写到html里，需要跳过
 				continue
+			
+			if half_url.startswith("javascript:"): # 有的js文件里包含 href="javascript:hello()"类似的形式，需要跳过
+				continue
 
 			if half_url[0:2] == "//": # 新的情况，还有这种形式的 //www.hello.com/sdf 做下预处理
 				if "https" in domain:
