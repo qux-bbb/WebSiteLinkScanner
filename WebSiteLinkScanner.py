@@ -6,6 +6,9 @@ import os # 用来创建文件夹
 from optparse import OptionParser
 import requests
 import re
+import time 
+import random
+
 
 
 # 加headers，绕过简单的反爬虫机制
@@ -45,6 +48,8 @@ def save_img(url):
 	open("img/" + img_name, "wb").write(res.content)
 	return
 
+# 访问延时，默认不延时
+wait_time = 0
 
 def scan(domain):
 	if domain[-1] == "/":  # 如果域名最后有 "/",就去掉
@@ -64,6 +69,11 @@ def scan(domain):
 		dir_url = url # 用来拼接不是http、https的链接
 		if '/' in url[8:]:
 			dir_url = re.findall(r'(https?://.*)/', url)[0]
+
+		# 判断是否延时访问
+		if wait_time != 0:
+			real_wait_time = wait_time  - 1 +  random.random()*2  # 延时范围在wait_time前后1秒左右
+			time.sleep(real_wait_time)
 
 		res = ""
 		try: # 有的时候会出现超时错误，包裹起来
@@ -124,19 +134,22 @@ if __name__ == '__main__':
         "Usage:    python WebSiteScanner.py [options]\nExample:  python WebSiteScanner.py -d http://hello.com")
 	parser.add_option("-d", "--domain", dest="domain", help="a domain")
 	parser.add_option("-s", "--save_image", action="store_true", dest="save_image", default=False, help="save images")
+	parser.add_option("-t", "--wait_time", type="int", dest="wait_time", default=0, help="delay access time")
 	(options, args) = parser.parse_args()
 
 	domain = options.domain
 	save_img_flag = options.save_image
+	wait_time = options.wait_time
+
+
+	if domain == None:
+		parser.print_help()
+		exit(0)
 
 	# 如果要保存图片，先创建一个文件夹
 	if save_img_flag:
 		if not os.path.exists("img"):
 			os.mkdir("img")
 
-	if domain == None:
-		parser.print_help()
-		exit(0)
-	# 百度不知不觉变成了 https
 	scan(domain)
 
