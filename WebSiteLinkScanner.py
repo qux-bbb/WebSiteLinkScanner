@@ -20,7 +20,7 @@ headers = {
 
 # 一些文件 如 图片，js，css文件，不用分析，直接跳过
 
-ignore_tails = [".jpg", ".png", ".gif",".js", ".css", ".pdf", ".apk"]
+ignore_tails = [".jpg", ".JPG", ".png", ".gif",".js", ".css", ".pdf", ".doc", ".xls",  ".ppt", "pptx", ".apk"]
 def ignore_it(url):
 	for tail in ignore_tails:
 		if url.endswith(tail):
@@ -41,15 +41,20 @@ save_img_flag = False
 def save_img(url):
 	img_name = url.split("/")[-1]
 	res = ""
-	try: # 有的时候会出现超时错误，包裹起来
+
+	try: # 有的时候会出现超时错误，包裹起来，有别的异常造成中断，所以捕获所有异常
 		res = requests.get(url, headers = headers, timeout = 10)
-	except requests.exceptions.Timeout:
+	# except requests.exceptions.Timeout:
+	except Exception as e:
 		return
 	open("img/" + img_name, "wb").write(res.content)
 	return
 
 # 访问延时，默认不延时
 wait_time = 0
+
+# 扫描完成响铃，默认不响铃
+finish_bell = False
 
 def scan(domain):
 	if domain[-1] == "/":  # 如果域名最后有 "/",就去掉
@@ -76,9 +81,10 @@ def scan(domain):
 			time.sleep(real_wait_time)
 
 		res = ""
-		try: # 有的时候会出现超时错误，包裹起来
+		try: # 有的时候会出现超时错误，包裹起来，有别的异常造成中断，所以捕获所有异常
 			res = requests.get(url, headers = headers, timeout = 10)
-		except requests.exceptions.Timeout:
+		# except requests.exceptions.Timeout:
+		except Exception as e:
 			continue
 
 		# 单引号是 有的重定向用的是单引号
@@ -91,7 +97,8 @@ def scan(domain):
 
 			if half_url.startswith("data:"): # 有的资源文件直接以 src形式写到html里，需要跳过
 				continue
-			
+			if half_url.startswith("mailto:"): # 邮件链接，需要跳过
+				continue			
 			if half_url.startswith("javascript:"): # 有的js文件里包含 href="javascript:hello()"类似的形式，需要跳过
 				continue
 
@@ -130,6 +137,11 @@ def scan(domain):
 	open("result.txt",'w').write("\n".join(urls))
 	print("The result saved in result.txt")
 
+	# 扫描完成响铃
+	if finish_bell:
+		for i in range(20):
+			print("\a")
+
 
 if __name__ == '__main__':
 
@@ -138,11 +150,13 @@ if __name__ == '__main__':
 	parser.add_option("-d", "--domain", dest="domain", help="a domain")
 	parser.add_option("-s", "--save_image", action="store_true", dest="save_image", default=False, help="save images")
 	parser.add_option("-t", "--wait_time", type="int", dest="wait_time", default=0, help="delay access time")
+	parser.add_option("-b", "--bell_done", action="store_true", dest="finish_bell", default=False, help="after scan, give belling")
 	(options, args) = parser.parse_args()
 
 	domain = options.domain
 	save_img_flag = options.save_image
 	wait_time = options.wait_time
+	finish_bell = options.finish_bell
 
 
 	if domain == None:
