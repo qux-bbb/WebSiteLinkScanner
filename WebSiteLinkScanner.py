@@ -2,7 +2,7 @@
 
 #网站静态页面扫描
 
-import os # 用来创建文件夹
+import os
 from optparse import OptionParser
 import requests
 import re
@@ -20,7 +20,7 @@ headers = {
 
 # 一些文件 如 图片，js，css文件，不用分析，直接跳过
 
-ignore_tails = [".jpg", ".JPG", ".png", ".gif",".js", ".css", ".pdf", ".doc", ".xls",  ".ppt", "pptx", ".apk"]
+ignore_tails = [".jpg", ".JPG", ".png", ".gif", ".ico",".js", ".css", ".pdf", ".doc", ".docx", ".xls", ".xlsx",  ".ppt", "pptx", ".apk"]
 def ignore_it(url):
 	for tail in ignore_tails:
 		if url.endswith(tail):
@@ -28,7 +28,7 @@ def ignore_it(url):
 	return False
 
 # 判断是否为图片
-img_tails = [".jpg", ".png", ".gif", ".ico"]
+img_tails = [".jpg", ".JPG", ".png", ".gif", ".ico"]
 def is_img(url):
 	for tail in img_tails:
 		if url.endswith(tail):
@@ -92,7 +92,8 @@ def scan(domain):
 		half_urls = re.findall(r"(?:href|src|action)\s?=\s?[\"\'](.*?)[\"\']", res.content) # 如果使用res.text,在保存时会出错
 		for half_url in half_urls:
 
-			if len(half_url) == 0: # 匹配为空的情况，需要跳过进行下一轮，比如 href="'+b+'"]
+			half_url_len = len(half_url)
+			if half_url_len == 0 or half_url_len > 600: # 匹配为空的情况，需要跳过进行下一轮，比如 href="'+b+'"]; 太长也直接略过
 				continue
 
 			if half_url.startswith("data:"): # 有的资源文件直接以 src形式写到html里，需要跳过
