@@ -56,6 +56,9 @@ wait_time = 0
 # 扫描完成响铃，默认不响铃
 finish_bell = False
 
+# 最大url长度限制，默认为600，超过直接忽略
+max_url_len = 600
+
 def scan(domain):
 	if domain[-1] == "/":  # 如果域名最后有 "/",就去掉
 		domain = domain[0:-1]
@@ -93,7 +96,7 @@ def scan(domain):
 		for half_url in half_urls:
 
 			half_url_len = len(half_url)
-			if half_url_len == 0 or half_url_len > 600: # 匹配为空的情况，需要跳过进行下一轮，比如 href="'+b+'"]; 太长也直接略过
+			if half_url_len == 0 or half_url_len > max_url_len: # 匹配为空的情况，需要跳过进行下一轮，比如 href="'+b+'"]; 太长也直接略过
 				continue
 
 			if half_url.startswith("data:"): # 有的资源文件直接以 src形式写到html里，需要跳过
@@ -152,12 +155,14 @@ if __name__ == '__main__':
 	parser.add_option("-s", "--save_image", action="store_true", dest="save_image", default=False, help="save images")
 	parser.add_option("-t", "--wait_time", type="int", dest="wait_time", default=0, help="delay access time")
 	parser.add_option("-b", "--bell_done", action="store_true", dest="finish_bell", default=False, help="after scan, give belling")
+	parser.add_option("-l", "--len_url", type="int", dest="max_url_len", default=600, help="max len of url")
 	(options, args) = parser.parse_args()
 
 	domain = options.domain
 	save_img_flag = options.save_image
 	wait_time = options.wait_time
 	finish_bell = options.finish_bell
+	max_url_len = options.max_url_len
 
 
 	if domain == None:
