@@ -20,7 +20,7 @@ headers = {
 
 # 一些文件 如 图片，js，css文件，不用分析，直接跳过
 
-ignore_tails = [".jpg", ".JPG", ".png", ".gif", ".ico",".js", ".css", ".pdf", ".doc", ".docx", ".xls", ".xlsx",  ".ppt", "pptx", ".apk"]
+ignore_tails = [".jpg", ".JPG", ".png", ".gif", ".ico",".js", ".css", ".pdf", ".doc", ".docx", ".xls", ".xlsx",  ".ppt", "pptx", ".apk", ".wav", ".WAV"]
 def ignore_it(url):
 	for tail in ignore_tails:
 		if url.endswith(tail):
@@ -144,6 +144,7 @@ def scan(domain):
 	# 扫描完成响铃
 	if finish_bell:
 		for i in range(20):
+			time.sleep(0.1)
 			print("\a")
 
 
