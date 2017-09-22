@@ -3,13 +3,12 @@
 #网站静态页面扫描
 
 import os
-from optparse import OptionParser
-import requests
-import re
-import time 
 import random
+import re
+import time
+from optparse import OptionParser
 
-
+import requests
 
 # 加headers，绕过简单的反爬虫机制
 headers = {
@@ -60,8 +59,8 @@ finish_bell = False
 max_url_len = 600
 
 def scan(domain):
-	if domain[-1] == "/":  # 如果域名最后有 "/",就去掉
-		domain = domain[0:-1]
+	if domain[-1] != "/":  # 如果域名最后没有 "/",就添加
+		domain += "/"
 
 	urls = [domain]
 	base_url = re.findall(r"https?://(?:www\.)?(.*\..*?$)",domain)[0]  # 最基本的url，用来判断是否同网站
@@ -141,10 +140,10 @@ def scan(domain):
 	open("result.txt",'w').write("\n".join(urls))
 	print("The result saved in result.txt")
 
-	# 扫描完成响铃
+	# 扫描完成响铃，只在cmd和终端下有效，cmder下无效
 	if finish_bell:
-		for i in range(20):
-			time.sleep(0.1)
+		for i in range(10):
+			time.sleep(1)
 			print("\a")
 
 
@@ -176,4 +175,3 @@ if __name__ == '__main__':
 			os.mkdir("img")
 
 	scan(domain)
-
