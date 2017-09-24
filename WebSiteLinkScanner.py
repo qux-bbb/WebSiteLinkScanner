@@ -59,8 +59,9 @@ finish_bell = False
 max_url_len = 600
 
 def scan(domain):
-	if domain[-1] != "/":  # 如果域名最后没有 "/",就添加
-		domain += "/"
+	domain = domain.strip()
+	if domain[-1] == "/":  # 如果域名最后没有 "/",就添加
+		domain = domain[:-1]
 
 	urls = [domain]
 	base_url = re.findall(r"https?://(?:www\.)?(.*\..*?$)",domain)[0]  # 最基本的url，用来判断是否同网站
@@ -115,6 +116,8 @@ def scan(domain):
 				if base_url in half_url: # 是本网站的url
 					if half_url[-1] == '/':  # 有http://hello  http://hello/  其实是一种情况
 						half_url = half_url[:-1]
+					if len(half_url) > max_url_len: # 长度超过指定长度即放弃
+						continue
 					if half_url not in urls:
 						urls.append(half_url)
 			else: # 没有 http、https的url肯定是这个站的，只要根据情况区分就好了
@@ -134,6 +137,8 @@ def scan(domain):
 						break
 				if join_url[-1] == '/':  # 有http://hello  http://hello/  其实是一种情况
 					join_url = join_url[:-1]
+				if len(half_url) > max_url_len: # 长度超过指定长度即放弃
+						continue
 				if join_url not in urls:
 					urls.append(join_url)
 
