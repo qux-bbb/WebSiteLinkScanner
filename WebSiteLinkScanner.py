@@ -18,7 +18,6 @@ headers = {
 
 
 # 一些文件 如 图片，js，css文件，不用分析，直接跳过
-
 ignore_tails = [".jpg", ".JPG", ".png", ".gif", ".ico",".js", ".css", ".pdf", ".doc", ".docx", ".xls", ".xlsx",  ".ppt", "pptx", ".apk", ".wav", ".WAV"]
 def ignore_it(url):
 	for tail in ignore_tails:
@@ -58,12 +57,18 @@ finish_bell = False
 # 最大url长度限制，默认为600，超过直接忽略
 max_url_len = 600
 
+# 保存所有的url
+urls = []
+def save_urls():
+	open("result.txt",'w').write("\n".join(urls))
+	print("The result saved in result.txt")
+
 def scan(domain):
 	domain = domain.strip()
-	if domain[-1] == "/":  # 如果域名最后没有 "/",就添加
+	if domain[-1] == "/":  # 如果域名最后有 "/",就删除
 		domain = domain[:-1]
 
-	urls = [domain]
+	urls.append(domain)
 	base_url = re.findall(r"https?://(?:www\.)?(.*\..*?$)",domain)[0]  # 最基本的url，用来判断是否同网站
 	for url in urls:
 		print(url.decode("utf8"))  # 有的汉字直接输出乱码，所以decode一下  
@@ -99,6 +104,8 @@ def scan(domain):
 			if half_url_len == 0 or half_url_len > max_url_len: # 匹配为空的情况，需要跳过进行下一轮，比如 href="'+b+'"]; 太长也直接略过
 				continue
 
+			if half_url == "#": # #指本网页，直接忽略
+				continue
 			if half_url.startswith("data:"): # 有的资源文件直接以 src形式写到html里，需要跳过
 				continue
 			if half_url.startswith("mailto:"): # 邮件链接，需要跳过
@@ -142,8 +149,8 @@ def scan(domain):
 				if join_url not in urls:
 					urls.append(join_url)
 
-	open("result.txt",'w').write("\n".join(urls))
-	print("The result saved in result.txt")
+	# 保存链接
+	save_urls()
 
 	# 扫描完成响铃，只在cmd和终端下有效，cmder下无效
 	if finish_bell:
@@ -178,5 +185,10 @@ if __name__ == '__main__':
 	if save_img_flag:
 		if not os.path.exists("img"):
 			os.mkdir("img")
-
-	scan(domain)
+	
+	try:
+		scan(domain)
+	except KeyboardInterrupt:
+		print("Interrupted by user")
+		save_urls()
+		exit()

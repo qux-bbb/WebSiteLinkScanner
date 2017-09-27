@@ -1,6 +1,5 @@
 # WebSiteLinkScanner
-网站内链接扫描,只能简单的做一些网站内的链接搜集了  
-可能不同的网站对headers中的Referer有不同的处理方法，比如百度Referer如果是www.baidu.com就不回应了，所以如果有这样的问题，可以去改改headers中的Referer  
+网站内链接扫描,简单的做一些网站内的链接搜集,也可以保存图片   
 
 ## 选项说明  
 <pre>-d  http://www.baidu.com  # 就是要扫描的域名  
