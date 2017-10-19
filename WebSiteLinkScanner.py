@@ -59,15 +59,14 @@ max_url_len = 600
 
 # 保存所有的url
 urls = []
-def save_urls():
-	open("result.txt",'w').write("\n".join(urls))
-	print("The result saved in result.txt")
 
 def scan(domain):
+	urls_file = open("result.txt",'w+')
 	domain = domain.strip()
 	if domain[-1] == "/":  # 如果域名最后有 "/",就删除
 		domain = domain[:-1]
 
+	urls_file.write(domain + "\n")
 	urls.append(domain)
 	base_url = re.findall(r"https?://(?:www\.)?(.*\..*?$)",domain)[0]  # 最基本的url，用来判断是否同网站
 	for url in urls:
@@ -126,6 +125,7 @@ def scan(domain):
 					if len(half_url) > max_url_len: # 长度超过指定长度即放弃
 						continue
 					if half_url not in urls:
+						urls_file.write(half_url + "\n")
 						urls.append(half_url)
 			else: # 没有 http、https的url肯定是这个站的，只要根据情况区分就好了
 				join_url = "" 
@@ -147,10 +147,12 @@ def scan(domain):
 				if len(half_url) > max_url_len: # 长度超过指定长度即放弃
 						continue
 				if join_url not in urls:
+					urls_file.write(join_url + "\n")
 					urls.append(join_url)
 
-	# 保存链接
-	save_urls()
+
+	urls_file.close()	
+	print("The result saved in result.txt")
 
 	# 扫描完成响铃，只在cmd和终端下有效，cmder下无效
 	if finish_bell:
@@ -190,5 +192,4 @@ if __name__ == '__main__':
 		scan(domain)
 	except KeyboardInterrupt:
 		print("Interrupted by user")
-		save_urls()
 		exit()
