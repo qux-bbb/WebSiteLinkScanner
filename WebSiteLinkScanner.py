@@ -10,15 +10,14 @@ from optparse import OptionParser
 
 import requests
 
-# 加headers，绕过简单的反爬虫机制
 headers = {
 	"User-Agent": "Mozilla/5.0 (Windows NT 10.0; WOW64; rv:54.0) Gecko/20100101 Firefox/54.0",
 	"Referer": "http://www.google.com",
 }
 
 
-# 一些文件 如 图片，js，css文件，不用分析，直接跳过
-ignore_tails = [".jpg", ".JPG", ".png", ".gif", ".ico",".js", ".css", ".pdf", ".doc", ".docx", ".xls", ".xlsx",  ".ppt", "pptx", ".apk", ".wav", ".WAV"]
+# 一些文件 如 图片，css文件，不用分析，直接跳过
+ignore_tails = [".jpg", ".JPG", ".png", ".gif", ".ico", ".css", ".pdf", ".doc", ".docx", ".xls", ".xlsx",  ".ppt", "pptx", ".apk", ".wav", ".WAV"]
 def ignore_it(url):
 	for tail in ignore_tails:
 		if url.endswith(tail):
@@ -57,18 +56,25 @@ finish_bell = False
 # 最大url长度限制，默认为600，超过直接忽略
 max_url_len = 600
 
+# 默认不扫描子域名，如果扫描子域名，结果太多，而且实际上已经跨网站了
+sub_domain = False
+
 # 保存所有的url
 urls = []
 
-def scan(domain):
+def scan(main_url):
 	urls_file = open("result.txt",'w+')
-	domain = domain.strip()
-	if domain[-1] == "/":  # 如果域名最后有 "/",就删除
-		domain = domain[:-1]
+	main_url = main_url.strip()
+	if main_url.endswith("/"):  # 如果域名最后有 "/",就删除
+		main_url = main_url[:-1]
 
-	urls_file.write(domain + "\n")
-	urls.append(domain)
-	base_url = re.findall(r"https?://(?:www\.)?(.*\..*?$)",domain)[0]  # 最基本的url，用来判断是否同网站
+	urls_file.write(main_url + "\n")
+	urls.append(main_url)
+	if sub_domain:
+		base_url = re.findall(r"https?://(?:www\.)?(.*\..*?$)",main_url)[0]  # 最基本的url，用来判断是否同网站，包括子域名
+	else:
+		base_url = re.findall(r"(https?://(?:www\.)?.*\..*$)",main_url)[0]  # 最基本的url，用来判断是否同网站，不包括子域名
+		
 	for url in urls:
 		print(url.decode("utf8"))  # 有的汉字直接输出乱码，所以decode一下  
 		# 判断是否保存图片
@@ -77,10 +83,6 @@ def scan(domain):
 
 		if ignore_it(url):
 			continue
-
-		dir_url = url # 用来拼接不是http、https的链接
-		if '/' in url[8:]:
-			dir_url = re.findall(r'(https?://.*)/', url)[0]
 
 		# 判断是否延时访问
 		if wait_time != 0:
@@ -92,6 +94,7 @@ def scan(domain):
 			res = requests.get(url, headers = headers, timeout = 10)
 		# except requests.exceptions.Timeout:
 		except Exception as e:
+			print '[!] ' + str(e.__class__)
 			continue
 
 		# 单引号是 有的重定向用的是单引号
@@ -112,38 +115,43 @@ def scan(domain):
 			if half_url.startswith("javascript:"): # 有的js文件里包含 href="javascript:hello()"类似的形式，需要跳过
 				continue
 
-			if half_url[0:2] == "//": # 新的情况，还有这种形式的 //www.hello.com/sdf 做下预处理
-				if "https" in domain:
+			if half_url.startswith("//"):  # 新的情况，还有这种形式的 //www.hello.com/sdf 做下预处理
+				if "https" in main_url:
 					half_url = "https:" + half_url
 				else:
 					half_url = "http:" + half_url
 
 			if "http" in half_url or "https" in half_url:
 				if base_url in half_url: # 是本网站的url
-					if half_url[-1] == '/':  # 有http://hello  http://hello/  其实是一种情况
-						half_url = half_url[:-1]
 					if len(half_url) > max_url_len: # 长度超过指定长度即放弃
 						continue
 					if half_url not in urls:
 						urls_file.write(half_url + "\n")
 						urls.append(half_url)
-			else: # 没有 http、https的url肯定是这个站的，只要根据情况区分就好了
-				join_url = "" 
-				if half_url[0] == '/':  # 这种情况直接从根目录算起
-					join_url = domain + half_url
-				elif half_url[0:2] == './':
+			else: # 现在没有 http、https的url肯定是这个站的，只要根据情况区分就好了
+
+				tmp_url = url  # 去除问号的影响，比如这样的：http://a.com/b?c=http://b.com/
+				if '?' in url:
+					tmp_url = url.split('?')[0]
+				dir_url = tmp_url  # 用来拼接不是http、https的链接
+				if '/' in tmp_url[8:]:
+					dir_url = re.findall(r'(https?://.*)/', tmp_url)[0]
+
+				join_url = "" # 合并之后的完整url
+				if half_url.startswith('/'):  # 这种情况直接从根目录算起
+					join_url = main_url + half_url
+				elif half_url.startswith('./'):
 					join_url = dir_url + half_url[1:]
 				else:
 					join_url = dir_url + "/" + half_url
 
-				while "../" in join_url: # 这里需要把  hello/../  这样的形式去掉,直接用replace正则表达式失败了，不知道怎么回事
+				while "../" in join_url: # 这里需要把  hello/../  这样的形式去掉
 					if re.match(r"(/[a-zA-Z0-9\-_]+/\.\./)", join_url):
 						join_url = re.sub(r'(/[a-zA-Z0-9\-_]+/\.\./)', "/", join_url)
 					else:
 						join_url = re.subn(r"\.\./","", join_url)[0] # 有的 ../写多了，如果上面没有匹配成功，就该把../全部删掉，跳出循环了
 						break
-				if join_url[-1] == '/':  # 有http://hello  http://hello/  其实是一种情况
-					join_url = join_url[:-1]
+
 				if len(half_url) > max_url_len: # 长度超过指定长度即放弃
 						continue
 				if join_url not in urls:
@@ -164,22 +172,25 @@ def scan(domain):
 if __name__ == '__main__':
 
 	parser = OptionParser(
-        "Usage:    python WebSiteScanner.py [options]\nExample:  python WebSiteScanner.py -d http://hello.com")
-	parser.add_option("-d", "--domain", dest="domain", help="a domain")
+        "Usage:    python WebSiteScanner.py [options]\nExample:  python WebSiteScanner.py -m http://hello.com")
+	parser.add_option("-m", "--main_url", dest="main_url", help="a main_url")
 	parser.add_option("-s", "--save_image", action="store_true", dest="save_image", default=False, help="save images")
 	parser.add_option("-t", "--wait_time", type="int", dest="wait_time", default=0, help="delay access time")
 	parser.add_option("-b", "--bell_done", action="store_true", dest="finish_bell", default=False, help="after scan, give belling")
 	parser.add_option("-l", "--len_url", type="int", dest="max_url_len", default=600, help="max len of url")
+	parser.add_option("-z", "--sub_domain", action="store_true", dest="sub_domain", default=False, help="scan include other subdomain")
+	
 	(options, args) = parser.parse_args()
 
-	domain = options.domain
+	main_url = options.main_url
 	save_img_flag = options.save_image
 	wait_time = options.wait_time
 	finish_bell = options.finish_bell
 	max_url_len = options.max_url_len
+	sub_domain = options.sub_domain
 
 
-	if domain == None:
+	if main_url == None:
 		parser.print_help()
 		exit(0)
 
@@ -189,7 +200,7 @@ if __name__ == '__main__':
 			os.mkdir("img")
 	
 	try:
-		scan(domain)
+		scan(main_url)
 	except KeyboardInterrupt:
 		print("Interrupted by user")
 		exit()
