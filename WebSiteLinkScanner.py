@@ -106,7 +106,7 @@ def scan(main_url):
 			if half_url_len == 0 or half_url_len > max_url_len: # 匹配为空的情况，需要跳过进行下一轮，比如 href="'+b+'"]; 太长也直接略过
 				continue
 
-			if half_url == "#": # #指本网页，直接忽略
+			if half_url in ['#', '.']: # 指本网页，直接忽略
 				continue
 			if half_url.startswith("data:"): # 有的资源文件直接以 src形式写到html里，需要跳过
 				continue
@@ -142,6 +142,8 @@ def scan(main_url):
 					join_url = main_url + half_url
 				elif half_url.startswith('./'):
 					join_url = dir_url + half_url[1:]
+				elif half_url == '..':  # 上级目录
+					join_url = dir_url
 				else:
 					join_url = dir_url + "/" + half_url
 
