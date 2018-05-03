@@ -155,12 +155,12 @@ def scan(main_url):
 						urls.append(half_url)
 			else: # 现在没有 http、https的url肯定是这个站的，只要根据情况区分就好了
 
-				tmp_url = res.url  # 去除问号的影响，比如这样的：http://a.com/b?c=http://b.com/
+				dir_url = res.url  # 去除问号的影响，比如这样的：http://a.com/b?c=http://b.com/
 				if '?' in res.url:
-					tmp_url = res.url.split('?')[0]
+					dir_url = res.url.split('?')[0]
 				# dir_url 当前目录，用来拼接不是http、https开头的链接
-				if '/' in tmp_url[8:]:
-					dir_url = re.findall(r'(https?://.*/)', tmp_url)[0]
+				if '/' in dir_url[8:]:
+					dir_url = re.findall(r'(https?://.*/)', dir_url)[0]
 				else:
 					dir_url = tmp_url + '/'
 
@@ -170,7 +170,10 @@ def scan(main_url):
 				elif half_url.startswith('./'):
 					join_url = dir_url + half_url[2:]
 				elif half_url == '..':  # 上级目录
-					join_url = dir_url
+					if '/' in dir_url[8:-1]:
+						join_url = re.findall(r'(https?://.*/)', dir_url[:-1])[0]
+					else:
+						join_url = dir_url
 				else:
 					join_url = dir_url + half_url
 
