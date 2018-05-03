@@ -17,7 +17,7 @@ headers = {
 
 
 # 一些文件 如 图片，css文件，不用分析，直接跳过
-ignore_tails = [".jpg", ".JPG", ".png", ".gif", ".ico", ".css", ".pdf", ".doc", ".docx", ".xls", ".xlsx",  ".ppt", "pptx", ".apk", ".wav", ".WAV"]
+ignore_tails = [".jpg", ".JPG", ".png", ".gif", ".ico", ".css", ".pdf", ".doc", ".docx", ".xls", ".xlsx",  ".ppt", "pptx", ".apk", ".wav", ".WAV", ".zip", ".rar", ".7z"]
 def ignore_it(url):
 	for tail in ignore_tails:
 		if url.endswith(tail):
@@ -62,21 +62,41 @@ sub_domain = False
 # 保存所有的url
 urls = []
 
+
+def test_deal_same_url(url):
+	if url in urls:
+		return True
+	else:
+		if url.endswith("/"):
+			if url[:-1] in urls:
+				urls[urls.index(url[:-1])] = url
+				return True
+			else:
+				return False
+		else:
+			if url+"/" in urls:
+				return True
+			else:
+				return False
+
+
 def scan(main_url):
 	urls_file = open("result.txt",'w+')
 	main_url = main_url.strip()
-	if main_url.endswith("/"):  # 如果域名最后有 "/",就删除
-		main_url = main_url[:-1]
+	if not main_url.endswith("/"):  # 如果域名最后没有 "/",就加一个
+		main_url = main_url + "/"
 
 	urls_file.write(main_url + "\n")
 	urls.append(main_url)
+	domain_url = re.findall(r"(https?://(?:www\.)?.*\..*?/)", main_url)[0]
 	if sub_domain:
-		base_url = re.findall(r"https?://(?:www\.)?(.*\..*?$)",main_url)[0]  # 最基本的url，用来判断是否同网站，包括子域名
+		base_url = re.findall(r"https?://(?:www\.)?(.*\..*?)/",main_url)[0]  # 最基本的url，用来判断是否同网站，包括子域名
 	else:
-		base_url = re.findall(r"(https?://(?:www\.)?.*\..*$)",main_url)[0]  # 最基本的url，用来判断是否同网站，不包括子域名
+		base_url = re.findall(r"(https?://(?:www\.)?.*\..*?)/",main_url)[0]  # 最基本的url，用来判断是否同网站，不包括子域名
 		
 	for url in urls:
-		print(url.decode("utf8"))  # 有的汉字直接输出乱码，所以decode一下  
+		print(url.decode("utf8"))  # 有的汉字直接输出乱码，所以decode一下
+
 		# 判断是否保存图片
 		if is_img(url) and save_img_flag:
 			save_img(url)
@@ -97,6 +117,9 @@ def scan(main_url):
 			print '[!] ' + str(e.__class__)
 			continue
 
+		if not url.endswith("/") and res.url.endswith("/") and res.url[:-1] == url:
+			urls[urls.index(url)] = res.url
+
 		# 单引号是 有的重定向用的是单引号
 		# \s? 是 有些 = 两边都有空格
 		half_urls = re.findall(r"(?:href|src|action)\s?=\s?[\"\'](.*?)[\"\']", res.content) # 如果使用res.text,在保存时会出错
@@ -107,6 +130,8 @@ def scan(main_url):
 				continue
 
 			if half_url in ['#', '.']: # 指本网页，直接忽略
+				continue
+			if half_url == '/': # 指本域，urls里已经有，跳过
 				continue
 			if half_url.startswith("data:"): # 有的资源文件直接以 src形式写到html里，需要跳过
 				continue
@@ -125,27 +150,29 @@ def scan(main_url):
 				if base_url in half_url: # 是本网站的url
 					if len(half_url) > max_url_len: # 长度超过指定长度即放弃
 						continue
-					if half_url not in urls:
+					if not test_deal_same_url(half_url):
 						urls_file.write(half_url + "\n")
 						urls.append(half_url)
 			else: # 现在没有 http、https的url肯定是这个站的，只要根据情况区分就好了
 
-				tmp_url = url  # 去除问号的影响，比如这样的：http://a.com/b?c=http://b.com/
-				if '?' in url:
-					tmp_url = url.split('?')[0]
-				dir_url = tmp_url  # 用来拼接不是http、https的链接
+				tmp_url = res.url  # 去除问号的影响，比如这样的：http://a.com/b?c=http://b.com/
+				if '?' in res.url:
+					tmp_url = res.url.split('?')[0]
+				# dir_url 当前目录，用来拼接不是http、https开头的链接
 				if '/' in tmp_url[8:]:
-					dir_url = re.findall(r'(https?://.*)/', tmp_url)[0]
+					dir_url = re.findall(r'(https?://.*/)', tmp_url)[0]
+				else:
+					dir_url = tmp_url + '/'
 
 				join_url = "" # 合并之后的完整url
 				if half_url.startswith('/'):  # 这种情况直接从根目录算起
-					join_url = main_url + half_url
+					join_url = domain_url + half_url[1:]
 				elif half_url.startswith('./'):
-					join_url = dir_url + half_url[1:]
+					join_url = dir_url + half_url[2:]
 				elif half_url == '..':  # 上级目录
 					join_url = dir_url
 				else:
-					join_url = dir_url + "/" + half_url
+					join_url = dir_url + half_url
 
 				while "../" in join_url: # 这里需要把  hello/../  这样的形式去掉
 					if re.match(r"(/[a-zA-Z0-9\-_]+/\.\./)", join_url):
@@ -156,7 +183,7 @@ def scan(main_url):
 
 				if len(half_url) > max_url_len: # 长度超过指定长度即放弃
 						continue
-				if join_url not in urls:
+				if not test_deal_same_url(join_url):
 					urls_file.write(join_url + "\n")
 					urls.append(join_url)
 
@@ -174,7 +201,7 @@ def scan(main_url):
 if __name__ == '__main__':
 
 	parser = OptionParser(
-        "Usage:    python WebSiteScanner.py [options]\nExample:  python WebSiteScanner.py -m http://hello.com")
+        "Usage:    python WebSiteScanner.py [options]\nExample:  python WebSiteScanner.py -m http://hello.com/")
 	parser.add_option("-m", "--main_url", dest="main_url", help="a main_url")
 	parser.add_option("-s", "--save_image", action="store_true", dest="save_image", default=False, help="save images")
 	parser.add_option("-t", "--wait_time", type="int", dest="wait_time", default=0, help="delay access time")
@@ -205,4 +232,5 @@ if __name__ == '__main__':
 		scan(main_url)
 	except KeyboardInterrupt:
 		print("Interrupted by user")
+		print "\n".join(urls)
 		exit()
