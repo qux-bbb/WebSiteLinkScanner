@@ -23,16 +23,18 @@ headers = {
 # 一些文件 如 图片，js文件，css文件，不分析，直接跳过
 ignore_tails = [".jpg", ".JPG", ".png", ".gif", ".ico", ".css", ".js", ".pdf", ".doc", ".docx", ".xls", ".xlsx",  ".ppt", "pptx", ".apk", ".wav", ".WAV", ".zip", ".rar", ".7z"]
 def ignore_it(url):
+	url_path = urlparse.urlparse(url).path
 	for tail in ignore_tails:
-		if url.endswith(tail):
+		if url_path.endswith(tail):
 			return True
 	return False
 
 # 判断是否为图片
 img_tails = [".jpg", ".JPG", ".png", ".gif", ".ico"]
 def is_img(url):
+	url_path = urlparse.urlparse(url).path
 	for tail in img_tails:
-		if url.endswith(tail):
+		if url_path.endswith(tail):
 			return True
 	return False
 
@@ -40,7 +42,8 @@ def is_img(url):
 save_img_flag = False
 # 保存图片 
 def save_img(url):
-	img_name = url.split("/")[-1]
+	url_path = urlparse.urlparse(url).path
+	img_name = url_path.split("/")[-1]
 	res = ""
 
 	try: # 有的时候会出现超时错误，包裹起来，有别的异常造成中断，所以捕获所有异常
@@ -129,7 +132,10 @@ def scan(main_url, urls_file):
 
 			if domain_url in join_url: # 在本域名下
 				if join_url not in [res.url, half_url] and join_url not in urls: # urls里还没有
-					if not only_main_dir or main_url_dir in join_url:  # 如果只扫描main_url所在目录
+					if only_main_dir:
+						if main_url_dir in join_url:
+							urls.append(join_url)
+					else:
 						urls.append(join_url)
 
 	urls_file.close()	
