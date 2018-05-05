@@ -43,16 +43,16 @@ save_img_flag = False
 # 保存图片 
 def save_img(url):
 	url_path = urlparse.urlparse(url).path
-	img_name = url_path.split("/")[-1]
+	img_name = url_path[1:].replace('/', '_')
 	res = ""
 
 	try: # 有的时候会出现超时错误，包裹起来，有别的异常造成中断，所以捕获所有异常
 		res = requests.get(url, headers = headers, timeout = 10)
 	# except requests.exceptions.Timeout:
 	except Exception as e:
-		return
+		return False
 	open("img/" + img_name, "wb").write(res.content)
-	return
+	return img_name
 
 # 访问延时，默认不延时
 wait_time = 0
@@ -65,6 +65,12 @@ only_main_dir = False
 
 # 保存所有的url
 urls = []
+
+# 保存所有输出的url
+print_urls = []
+
+# 保存所有成功请求的图片url
+img_urls = []
 
 
 def scan(main_url, urls_file):
@@ -87,18 +93,15 @@ def scan(main_url, urls_file):
 		else:
 			main_url_dir = domain_url + '/'
 	else:
-		if domain_url != main_url and domain_url+'/' != main_url:
+		if domain_url != res.url and domain_url + '/' != res.url:
 			urls.append(domain_url)
 
 	for url in urls:
 		if len(url) == 0: # href=''
 			continue
 
-		# 判断是否保存图片
-		if save_img_flag and is_img(url):
-			save_img(url)
-
-		if ignore_it(url):
+		if ignore_it(url) and url not in print_urls:
+			print_urls.append(url)
 			print url.decode("utf8")
 			urls_file.write(url + "\n")
 			continue
@@ -116,8 +119,10 @@ def scan(main_url, urls_file):
 			continue
 		code_str = str(res.status_code)
 		if code_str.startswith('2') or code_str.startswith('3'):
-			print res.url.decode("utf8")
-			urls_file.write(res.url + "\n")
+			if res.url not in print_urls:
+				print_urls.append(res.url)
+				print res.url.decode("utf8")
+				urls_file.write(res.url + "\n")
 
 		# ignore没有忽略掉，但是不需要分析的类型  只分析页面
 		if 'text/html' not in res.headers['Content-Type']:
@@ -130,8 +135,16 @@ def scan(main_url, urls_file):
 		for half_url in half_urls:
 			join_url = urlparse.urljoin(res.url, half_url)
 
+			# 判断是否保存图片
+			if save_img_flag and is_img(join_url):
+				if join_url not in img_urls:
+					img_name = save_img(join_url)
+					if img_name:
+						print '[*] img: %s'%img_name
+						img_urls.append(join_url)
+
 			if domain_url in join_url: # 在本域名下
-				if join_url not in [res.url, half_url] and join_url not in urls: # urls里还没有
+				if join_url != res.url and join_url not in urls: # urls里还没有
 					if only_main_dir:
 						if main_url_dir in join_url:
 							urls.append(join_url)
